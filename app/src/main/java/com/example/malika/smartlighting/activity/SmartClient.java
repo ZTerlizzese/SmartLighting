@@ -32,7 +32,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-class SmartClient implements Serializable {
+class SmartClient {
 
     //////////////////////////
     //Customizable Variables//
