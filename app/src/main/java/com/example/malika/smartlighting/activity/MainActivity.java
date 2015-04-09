@@ -1,67 +1,71 @@
 package com.example.malika.smartlighting.activity;
 
-import android.content.Intent;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.widget.Button;
-import android.widget.SeekBar;
+import android.util.Log;
 
 import com.example.malika.smartlighting.R;
 
+public class MainActivity extends ActionBarActivity implements ConnectFragment.ConnectInterface, Dashboard.DashboardInterface {
 
-public class MainActivity extends ActionBarActivity {
+    /////////////
+    //Variables//
+    /////////////
+
+    //Fragments
+    FragmentManager manager;
+    ConnectFragment connect;
+    Dashboard dashboard;
+
+    //Objects
     SmartClient client;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        manager = getFragmentManager();
+        client = null;
+
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.mainpage);
-        client = (SmartClient)getIntent().getSerializableExtra("client");
+        setContentView(R.layout.activity_main);
+        if (savedInstanceState == null) {
 
-        final Button schedule = (Button) findViewById(R.id.scheduleButton);
-        schedule.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                Intent i = new Intent();
-                i.setClassName("com.example.malika.smartlighting", "com.example.malika.smartlighting.activity.ScheduleInfo");
-                startActivity(i);
-            }
-        });
-        SeekBar seekBar = (SeekBar) findViewById(R.id.luminosity);
-        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            if(connect == null)
+                connect = new ConnectFragment();
 
-            }
+            //this is what adds fragments to this activity's layout
+            //can be used to add multiple fragments, just make sure there a container for each of them
+            FragmentTransaction trans = manager.beginTransaction();
 
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
+            //container for fragment, new fragment
+            trans.add(R.id.frame1, connect);
+            trans.commit();
 
-            }
+        }
+    }
 
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
+    public void connected(SmartClient client)
+    {
+        //Save client
+        this.client = client;
 
-            }
-        });
+        //Create Dashboard fragment
+        dashboard = new Dashboard();
+        dashboard.client = client;
+
+        //switch
+        FragmentTransaction trans = manager.beginTransaction();
+        //container for fragment, new fragment
+        trans.replace(R.id.frame1, dashboard);
+        trans.commit();
+    }
+
+    public void schedule()
+    {
 
     }
 
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        outState.putSerializable("client", client);
-        super.onSaveInstanceState(outState);
-    }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-       return false;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        return false;
-    }
 }

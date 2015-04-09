@@ -1,51 +1,73 @@
 package com.example.malika.smartlighting.activity;
 
+import android.app.Activity;
+import android.app.Fragment;
 import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
 import com.example.malika.smartlighting.R;
 
 
-public class SmartAndroid extends ActionBarActivity {
+public class ConnectFragment extends Fragment {
 
     //Class Variables
     static final String hostnameDefault = "10.176.67.118";//"192.168.2.9";//"localhost";
     static final int portDefault = 1024;
     static final boolean autoConnect = false; //Connect on startup
 
-    //Button counter
-    int counter;
-
     //Objects
+    ConnectInterface listener; //fragment interface to send data to main
     SmartClient client;
     TextView status;
     TextView hostname;
     TextView port;
     Button command;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_app);
+    public static ConnectFragment newInstance() {
+        ConnectFragment fragment = new ConnectFragment();
+        Bundle args = new Bundle();
+        return fragment;
+    }
 
-        //Counter used for demo
-        counter = 0;
+    public ConnectFragment() {
+        // Required empty public constructor
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
         //Create the client which holds the connection with the server
         client = new SmartClient(SmartClient.APP, hostnameDefault, portDefault);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+        View view = inflater.inflate(R.layout.connect_fragment, container, false);
 
         //Find the UI objects
-        status = (TextView) findViewById(R.id.status);
-        hostname = (TextView) findViewById(R.id.hostname);
-        port = (TextView) findViewById(R.id.port);
-        command = (Button) findViewById(R.id.command);
+        status = (TextView) view.findViewById(R.id.status);
+        hostname = (TextView) view.findViewById(R.id.hostname);
+        port = (TextView) view.findViewById(R.id.port);
+        command = (Button) view.findViewById(R.id.command);
+
+        command.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                //Switch to schedule info
+                onCommand(command);
+            }
+        });
 
         hostname.setText(hostnameDefault);
         port.setText(portDefault + "");
@@ -66,29 +88,8 @@ public class SmartAndroid extends ActionBarActivity {
             thread.execute(ClientThread.CONNECT);
         }
 
-    }
 
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_app, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
+        return view;
     }
 
     public void onCommand(View view) {
@@ -96,7 +97,6 @@ public class SmartAndroid extends ActionBarActivity {
         //if no connection...
         if(client.isConnected() == false)
         {
-            Log.v("DEBUG", "Retrying connection...");
 
             //Create the client which holds the connection with the server
             try {
@@ -119,19 +119,10 @@ public class SmartAndroid extends ActionBarActivity {
             hostname.setEnabled(false);
             port.setEnabled(false);
         }
-        //Otherwise, perform action
-        else {
-/*
-            //Increment the counter for the demo
-            counter++;
 
-            //Create a new thread to send a command to the server
-            ClientThread thread = new ClientThread(this, client);
-            thread.execute(ClientThread.SEND, "" + counter);
-            command.setEnabled(false);*/
-        }
     }
 
+    //Response from ClientThread Async Task
     public void update(String input)
     {
 
@@ -160,17 +151,49 @@ public class SmartAndroid extends ActionBarActivity {
             hostname.setEnabled(true);
             port.setEnabled(true);
         }
+        //Else if connection was successful...
+        else {
+            //this will signal main activity and pass the client object to it
+            listener.connected(client);
+
+        }
 
         //Show the ack from the server (accessed by client thread)
         status.setText(input);
 
-        Intent intent = new Intent();
-        intent.setClassName("com.example.malika.smartlighting", "com.example.malika.smartlighting.activity.MainActivity");
-        intent.putExtra("client", client);
-        startActivity(intent);
-
 
     }
+
+
+    /////////////
+    //Interface//
+    /////////////
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        try {
+            listener = (ConnectInterface) activity;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(activity.toString()
+                    + " must implement ConnectInterface");
+        }
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        listener = null;
+    }
+
+    //implement this interface and it functions in main if you want the fragment to send data to the
+    //main activity
+    public interface ConnectInterface {
+
+        public void connected(SmartClient client);
+
+    }
+
 
 
 }
