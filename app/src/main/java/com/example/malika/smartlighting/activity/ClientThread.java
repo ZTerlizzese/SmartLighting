@@ -7,7 +7,7 @@ import android.util.Log;
 class ClientThread extends AsyncTask<String, Integer, String> {
 
     //Parent file used to call this class
-    ConnectFragment app;
+    SmartAndroid app;
 
     //Client to connect to server
     SmartClient client;
@@ -19,7 +19,7 @@ class ClientThread extends AsyncTask<String, Integer, String> {
     static final String DISCONNECT = "DISCONNECT";
 
     //Constructor (called on every search)
-    public ClientThread(ConnectFragment app, SmartClient client)
+    public ClientThread(SmartAndroid app, SmartClient client)
     {
         this.app = app;
 
